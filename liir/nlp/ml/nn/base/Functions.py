@@ -2,7 +2,6 @@ __author__ = 'quynhdo'
 import theano as th
 import theano.tensor as T
 import numpy as np
-from theano.tensor.shared_randomstreams import RandomStreams
 
 
 #### activate functions
@@ -42,8 +41,6 @@ def CrossEntroyCostFunction(o,y):
 
 
 #### functions to process input for the input layer
-rng = np.random.RandomState(123)
-theano_rng = RandomStreams(rng.randint(2 ** 30))
+
 
 def NoneProcessFunction(x, *args): return x
-def DenoisingProcessFunction(x, corruption_level):  return theano_rng.binomial(size=x.shape, n=1, p=1 - corruption_level, dtype=th.config.floatX) * x

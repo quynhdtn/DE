@@ -124,9 +124,6 @@ dataset='/Users/quynhdo/Downloads/mnist.pkl'
 datasets = load_data(dataset)
 train_set_x, train_set_y = datasets[0]
 
-da = gmDA(28*28,500,0,0.1,5,20)
-da.train(train_set_x)
-
 
 da = gmDA(28*28,500,0.3,0.1,5,20)
 da.train(train_set_x)

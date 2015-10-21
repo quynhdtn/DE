@@ -9,16 +9,22 @@ from liir.nlp.ml.nn.base.Functions import SigmoidOutputFunction
 from liir.nlp.ml.nn.base.Connection import  Connection
 class NNNet:
 
-    def __init__(self, *layers, cost_function):
+    def __init__(self, *layers, cost_function, **connection_config):
         self.layers=[]
         self.connections=[]
         self.layers=layers
         self.params=[]
-
-        for i in range(len(layers)-1):
-            c = self.createConnection(layers[i],layers[i+1])
-            self.connections.append(c)
-            self.params=self.params+c.params
+        if len(connection_config)!=0:
+            for l1,l2 in connection_config.keys():
+                af,of=connection_config[(l1,l2)]
+                c = self.createConnection(layers[l1],layers[l2], af, of)
+                self.connections.append(c)
+                self.params=self.params+c.params
+        else:
+            for i in range(len(layers)-1):
+                c = self.createConnection(layers[i],layers[i+1])
+                self.connections.append(c)
+                self.params=self.params+c.params
 
         self.cost_function= cost_function
 

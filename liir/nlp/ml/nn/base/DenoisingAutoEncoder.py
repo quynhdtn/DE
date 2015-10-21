@@ -7,7 +7,7 @@ try:
 except ImportError:
     import Image
 from liir.nlp.ml.classifiers.linear.utils import tile_raster_images
-from liir.nlp.ml.nn.base.Layer  import Layer
+from liir.nlp.ml.nn.base.Layer  import Layer,DenoisingLayer
 from liir.nlp.ml.nn.base.NNNet  import NNNet
 from liir.nlp.ml.nn.base.Functions import CrossEntroyCostFunction
 from theano.tensor.shared_randomstreams import RandomStreams
@@ -20,16 +20,11 @@ class DenoisingAutoEncoder(AutoEncoder):
         self.corruption_level = corruption_level
 
 
-        self.rng = np.random.RandomState(123)
-        self.theano_rng = RandomStreams(self.rng.randint(2 ** 30))
 
-
-
-        ilayer = Layer(numNodes=nIn, ltype = Layer.Layer_Type_Input, id="0", input_process_func=MyDenoisingProcessFunction)
+        ilayer = DenoisingLayer(numNodes=nIn, ltype = Layer.Layer_Type_Input, id="0", corruption_level=corruption_level)
         hlayer = Layer(numNodes=nHidden, ltype = Layer.Layer_Type_Hidden, id="1")
         olayer = Layer(numNodes=nIn, ltype = Layer.Layer_Type_Output, id="2")
 
-        ilayer.input_process_func.
 
         # declare nnnet
         self.net = NNNet(ilayer, hlayer, olayer, cost_function=CrossEntroyCostFunction)
@@ -43,7 +38,6 @@ class DenoisingAutoEncoder(AutoEncoder):
 
 
 
-    def MyDenoisingProcessFunction(x, corruptionlevel=self.corruption_level):  return theano_rng.binomial(size=x.shape, n=1, p=1 - corruption_level, dtype=th.config.floatX) * x
 
 
     def fit(self, train_data, batch_size, training_epochs, learning_rate):

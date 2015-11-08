@@ -1,31 +1,18 @@
 __author__ = 'quynhdo'
 
-
+import theano as T
 class NNNetComplex:
-    def __init__(self, *components, *connection_layer_ids, cost_function):
+    def __init__(self, *components,  cost_function, **connection_layer_ids):
         self.components=components
-        self.connection_layer_ids = connection_layer_ids
-        self.layers=[]
-        self.connections=[]
-        self.params=[]
-
-        lst=[]
-        i=0
-        for i in range(len(components)):
-            for j in range(connection_layer_ids[i]):
-                self.layers.append(components[i].layers[j])
-                i+=1
-                self.connections.append(components[i].connections[j])
-            self.layers.append(components[i].layers[connection_layer_ids[i]])
-            lst.append(i)
-            i+=1
-
-        for l in lst:
 
 
+    def fit(self, train_data, train_data_label, batch_size, training_epochs, learning_rate):
+
+        td = train_data
+        # train each component
+        for i in range(len(self.components)):
+            self.components[i].fit(td, )
 
 
-
-        self.cost_function= cost_function
 
 

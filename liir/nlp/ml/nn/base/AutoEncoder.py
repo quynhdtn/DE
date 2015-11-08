@@ -9,7 +9,35 @@ try:
 except ImportError:
     import Image
 from liir.nlp.ml.classifiers.linear.utils import tile_raster_images
-class AutoEncoder:
+
+
+class AutoEncoder(NNNet):
+    def __init__(self, nIn=700, nHidden=500):
+
+        # declare layers
+        ilayer = Layer(numNodes=nIn, ltype = Layer.Layer_Type_Input, id="0")
+        hlayer = Layer(numNodes=nHidden, ltype = Layer.Layer_Type_Hidden, id="1")
+        olayer = Layer(numNodes=nIn, ltype = Layer.Layer_Type_Output, id="2")
+
+        # declare nnnet
+        NNNet.__init__(self, ilayer, hlayer, olayer, cost_function=CrossEntroyCostFunction)
+
+        # change parameter constraint
+        conn1 = self.connections[0]
+        conn2 = self.connections[1]
+
+        self.params.remove(conn2.W)
+        conn2.W = conn1.W.T
+
+    def fit(self, train_data, batch_size, training_epochs, learning_rate):
+        NNNet.fit(self, train_data, train_data, batch_size, training_epochs, learning_rate)
+        image = Image.fromarray(
+            tile_raster_images(X=self.connections[0].W.get_value(borrow=True).T,
+                               img_shape=(28, 28), tile_shape=(10, 10),
+                               tile_spacing=(1, 1)))
+        image.save('test_ae1.png')
+
+class AutoEncoder1:
 
     def __init__(self, nIn=700, nHidden=500):
         # declare layers

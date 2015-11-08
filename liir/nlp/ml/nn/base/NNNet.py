@@ -30,8 +30,8 @@ class NNNet:
 
 
 
-    def createConnection (self, l1, l2, af= DotActivateFunction, of = SigmoidOutputFunction):
-        return Connection(scr=l1, dst=l2, activate_func=af, output_func=of, use_bias=l1.useBias , id="c"+l1.id)
+    def createConnection (self, l1, l2,initial_w=None, af= DotActivateFunction, of = SigmoidOutputFunction, otype=Connection.Output_Type_Real):
+        return Connection(scr=l1, dst=l2, activate_func=af, output_func=of, use_bias=l1.useBias , id="c"+l1.id, otype=otype, initial_w=initial_w)
 
 
     def get_connection(self, l1, l2):
@@ -65,12 +65,13 @@ class NNNet:
     def fit(self, train_data, train_data_label, batch_size, training_epochs, learning_rate):
         index = T.lscalar()
         x = T.matrix('x')
-        if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_SoftMax):
-            y = T.ivector('y')
-        if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Binary):
-            y = T.iscalar('y')
-        if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Real):
-            y = T.matrix('y')
+     #   if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_SoftMax):
+     #       y = T.ivector('y')
+
+      #  if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Binary):
+      #      y = T.iscalar('y')
+      #  if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Real):
+        y = T.matrix('y')
 
         cost,updates=self.get_cost_updates(x,y, learning_rate)
         train_da = th.function(
@@ -82,8 +83,9 @@ class NNNet:
             y: train_data_label[index * batch_size: (index + 1) * batch_size]
             }
         )
+        n_train_batches = (int) (train_data.get_value(borrow=True).shape[0] / batch_size)
 
-        n_train_batches = (int) (train_data_label.get_value(borrow=True).shape[0] / batch_size)
+     #   n_train_batches =2
         start_time = timeit.default_timer()
         for epoch in range(training_epochs):
         # go through trainng set
@@ -100,3 +102,10 @@ class NNNet:
 
 
 
+    def predict(self, x):
+        t=x
+        for i in range(len(self.connections)):
+            t = self.connections[i].getOutputValue(t)
+
+
+        return t

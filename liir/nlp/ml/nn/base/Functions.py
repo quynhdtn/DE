@@ -20,19 +20,22 @@ def NoneActivateFunction(self, x, W, b):
 #### output functions
 SigmoidOutputFunction = T.nnet.sigmoid
 SoftmaxOutputFunction = T.nnet.softmax
+TanhOutputFunction = T.tanh
 def NoneOutputFunction (x):
     return x
 
 
 
 #### cost functions
-def NegativeLogLikelihoodCostFunction(o, y):
+def NegativeLogLikelihoodCostFunction(o, y, net=None):
         return -T.mean(T.log(o)[T.arange(y.shape[0]), y])
 
-def SquaredErrorCostFunction(o,y):
-        return -T.mean((o-y) ** 2)
 
-def CrossEntroyCostFunction(o,y):
+
+def SquaredErrorCostFunction(o,y, net=None):
+        return T.mean((o-y) ** 2)
+
+def CrossEntroyCostFunction(o, y, net=None):
     L = - T.sum(y * T.log(o) + (1 - y) * T.log(1 - o), axis=1)
 
     cost = T.mean(L)

@@ -53,7 +53,10 @@ class DenoisingAutoEncoder(NNNet):
 
 
         self.connect(self.x)
+
         cost = self.cost_function(self.layers[len(self.layers)-1].output , self.y)
+      #  if self.L is not None:
+      #      cost = cost + self.L_lamda * self.L
 
         '''
         if self.knowledge != None:
@@ -78,8 +81,10 @@ class DenoisingAutoEncoder(NNNet):
 
 
 
-    def fit(self, train_data, batch_size, training_epochs, learning_rate, knowledge=None):
-        self.knowledge=knowledge
+    def fit(self, train_data, batch_size, training_epochs, learning_rate, knowledge=None, l=None, llamda=None):
+   #     if l is not None:
+   #         self.setRegularization(l, llamda)
+   #     self.knowledge=knowledge
         NNNet.fit(self, train_data, train_data, batch_size, training_epochs, learning_rate)
         image = Image.fromarray(
             tile_raster_images(X=self.connections[0].W.get_value(borrow=True).T,

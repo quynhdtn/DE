@@ -56,6 +56,8 @@ class NNNet:
         else:
             self.y = output
 
+   #     self.L=None
+
         if auto_create_connection:
             for i in range(len(layers)-1):
                 if initial_w is None:
@@ -69,6 +71,17 @@ class NNNet:
                     self.params=self.params+c.params
 
 
+    def setRegularization(self, name="l1", l_lamda = 0.0001):
+        self.L = 0
+        self.L_lamda = l_lamda
+        if name == "l1":
+
+            for conn in self.connections:
+                self.L += abs(conn.W).sum()
+
+        if name =="l2":
+            for conn in self.connections:
+                self.L += abs(conn.W ** 2).sum()
 
 
 
@@ -98,6 +111,10 @@ class NNNet:
     def get_cost_updates(self,learning_rate):
 
         cost = self.cost_function(self.layers[len(self.layers)-1].output , self.y)
+
+   #     if self.L is not None:
+
+    #        cost = cost + self.L_lamda * self.L
 
         gparams = T.grad(cost, self.params)
 
@@ -154,6 +171,14 @@ class NNNet:
     def predict(self, x):
         t=x
         for i in range(len(self.connections)):
+            t = self.connections[i].getOutputValue(t)
+
+
+        return t
+
+    def getHiddenValue(self, x):
+        t=x
+        for i in range(len(self.connections)-1):
             t = self.connections[i].getOutputValue(t)
 
 

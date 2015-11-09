@@ -1,4 +1,5 @@
 
+
 __author__ = 'quynhdo'
 from liir.nlp.ml.nn.base.DenoisingAutoEncoder import DenoisingAutoEncoder
 from liir.nlp.ml.classifiers.linear.logistic import load_data
@@ -17,17 +18,24 @@ from liir.nlp.ml.nn.base.Connection import Connection
 from liir.nlp.ml.nn.base.Functions import SquaredErrorCostFunction, SigmoidOutputFunction, \
     NegativeLogLikelihoodCostFunction
 
-class StackDenoisingAutoEncoder:
+class StackDenoisingAutoEncoderEx:
 
 
-    def __init__(self, numInput, numHiddens, numOutput, corruption_level,  input=None, input_type="matrix", output=None, output_type="matrix",id=""):
+    def __init__(self, numInput, numHiddens, numOutput, corruption_level, numExtend=None, input=None, extend_input=None, input_type="matrix", output=None, output_type="matrix",id=""):
 
         layers=[]
         ilayer = Layer(numNodes=numInput, ltype = Layer.Layer_Type_Input, id=id+"0")  # input layer
         layers.append(ilayer)
 
-        for i in  range(len(numHiddens)):
-            hlayer = Layer(numNodes=numHiddens[i], ltype = Layer.Layer_Type_Hidden, id=id+str(i))
+        if numExtend is None:
+            for i in  range(len(numHiddens)):
+                hlayer = Layer(numNodes=numHiddens[i], ltype = Layer.Layer_Type_Hidden, id=id+str(i))
+                layers.append(hlayer)
+        else:
+            for i in  range(len(numHiddens)-1):
+                hlayer = Layer(numNodes=numHiddens[i], ltype = Layer.Layer_Type_Hidden, id=id+str(i))
+                layers.append(hlayer)
+            hlayer = Layer(numNodes=numHiddens[len(numHiddens)-1], ltype = Layer.Layer_Type_Hidden, id=id+str(i), extendNodes=numExtend)
             layers.append(hlayer)
 
         # construct the first DA:
@@ -52,7 +60,16 @@ class StackDenoisingAutoEncoder:
         else:
             self.y = output
 
-        self.mlp = MLP(layers, numOutput, activate_function=SigmoidOutputFunction, cost_function=NegativeLogLikelihoodCostFunction, input=self.x)
+        if extend_input is None:
+            if input_type == "matrix":
+                self.x_extend = T.matrix(name='extend_input')
+
+            if input_type == "vector":
+                self.x = T.vector(name='extend_input')
+        else:
+            self.x_extend = extend_input
+
+        self.mlp = MLP(layers, numOutput, activate_function=SigmoidOutputFunction, cost_function=NegativeLogLikelihoodCostFunction, input=self.x, extend_input=self.x_extend)
 
 
         dA= DenoisingAutoEncoder(layers[0].size, layers[1].size, initial_w=self.mlp.connections[0].W, initial_b=self.mlp.connections[0].b,  input=self.x, id="da0", corruption_level=corruption_level[0])
@@ -166,26 +183,17 @@ test_set_x, test_set_y = datasets[1]
 
 
 
-sda= StackDenoisingAutoEncoder(28*28,numHiddens=[1000, 1000, 1000],numOutput=10,corruption_level=[0.1,0.2,0.3])
-sda.preTraining(train_set_x, 20, 2,0.01)
+sda= StackDenoisingAutoEncoderEx(28*28-2,numHiddens=[1000, 1000, 1000],numOutput=10, numExtend=2, corruption_level=[0.1,0.2,0.3])
+sda.preTraining(th.shared(train_set_x.eval()[:,0:28*28-2]), 20, 2,0.01)
 
-sda.mlp.fit(train_set_x, train_set_y, 20,1,0.1)
+sda.mlp.fit(th.shared(train_set_x.eval()[:,0:28*28-2]),th.shared(train_set_x.eval()[:,28*28-2:28*28]), train_set_y, 20,1,0.1)
 
-y_pred = sda.mlp.predict(test_set_x)
+y_pred = sda.mlp.predict(test_set_x.eval()[:,0:28*28-2], test_set_x.eval()[:,28*28-2:28*28])
 print(y_pred)
-print (test_set_y)
+#print (test_set_y)
 from sklearn import metrics
 print (metrics.f1_score(test_set_y.eval(),y_pred))
 
-from liir.nlp.ml.nn.base.Factory import Factory
-mp=Factory.buildMLPStandard(28*28, 10)
-mp.fit(train_set_x, train_set_y,20,1,0.1)
 
-
-y_pred = mp.predict(test_set_x)
-print(y_pred)
-print (test_set_y)
-from sklearn import metrics
-print (metrics.f1_score(test_set_y.eval(),y_pred))
 
 # we need a function to convert Y set from vector to matrix

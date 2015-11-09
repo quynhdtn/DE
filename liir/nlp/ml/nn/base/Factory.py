@@ -15,12 +15,45 @@ class Factory:
         nHidden = int( math.sqrt(numInput * (numOutput+2)) + 2 *math.sqrt(numInput / (numOutput+2)) )
         hlayer = Layer(numNodes=nHidden, ltype = Layer.Layer_Type_Hidden, id=id+"1")    #hidden layer
 
-        return MLP([ilayer, hlayer], size_output_layer=numOutput, cost_function=SquaredErrorCostFunction, id=id)
+        return MLP([ilayer, hlayer], size_output_layer=numOutput, cost_function=NegativeLogLikelihoodCostFunction, id=id)
 
 
 
 
 
+from sklearn.datasets import load_iris
+import numpy
+iris = load_iris()
+X= iris.data
+Y = iris.target
+
+from sklearn import metrics
+import theano as th
+import theano.tensor as T
+
+
+mp=Factory.buildMLPStandard(len(X[0]), len(set(Y)))
+from sklearn import cross_validation
+
+X_train, X_test, y_train, y_test = cross_validation.train_test_split( iris.data, Y, test_size=0.4, random_state=0)
+
+mp.fit(th.shared(X_train), T.cast(th.shared(y_train), 'int32'), 15, 3000, 0.005)
+
+y_pred = mp.predict(X_test)
+
+
+print (y_pred)
+
+print (metrics.f1_score(y_test,y_pred))
+
+from sklearn import svm
+clf = svm.SVC()
+clf.fit(X_train, y_train)
+y_pred=clf.predict(X_test)
+print (metrics.f1_score(y_test,y_pred))
+
+
+'''
 from sklearn.datasets import load_iris
 import numpy
 iris = load_iris()
@@ -59,4 +92,5 @@ clf = svm.SVC()
 clf.fit(X_train, y_train.argmax(axis=1))
 y_pred=clf.predict(X_test)
 print (metrics.f1_score(y_test.argmax(axis=1),y_pred))
+'''
 

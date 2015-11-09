@@ -28,6 +28,7 @@ def NoneOutputFunction (x):
 
 #### cost functions
 def NegativeLogLikelihoodCostFunction(o, y, net=None):
+
         return -T.mean(T.log(o)[T.arange(y.shape[0]), y])
 
 

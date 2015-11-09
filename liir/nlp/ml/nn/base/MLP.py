@@ -8,38 +8,10 @@ import theano
 import numpy
 class MLP(NNNet):
 
-    '''
-    def __init__(self, *layers, size_output_layer=100,  activate_function=TanhOutputFunction, cost_function=SquaredErrorCostFunction, id=""):
-        self.layers=list(layers)
 
-        self.connections=[]
-        self.params=[]
-        for i in range(len(layers)):
-            self.layers[i].id = id + str(i)
+    def __init__(self, layers, size_output_layer=100,  activate_function=TanhOutputFunction, cost_function=SquaredErrorCostFunction, input=None, input_type="matrix", output=None,  id=""):
 
-        if layers[len(layers)-1].ltype != Layer.Layer_Type_Output:
-            output_layer = Layer(numNodes=size_output_layer, ltype = Layer.Layer_Type_Output, id=id+str(len(layers)))
-            self.layers.append(output_layer)
-
-        rng = numpy.random.RandomState(1234)
-        for i in range(len(self.layers)-1):
-            c = None
-            if i <len(self.layers)-2:
-                c = self.createConnection(self.layers[i],self.layers[i+1], of = activate_function)
-            else:
-                c = self.createConnection(self.layers[i],self.layers[i+1], of = SoftmaxOutputFunction, otype=Connection.Output_Type_SoftMax)
-
-            self.connections.append(c)
-            self.params=self.params+c.params
-
-        self.cost_function= cost_function
-    '''
-
-    def __init__(self, layers, size_output_layer=100,  activate_function=TanhOutputFunction, cost_function=SquaredErrorCostFunction, id=""):
-        self.layers=layers
-
-        self.connections=[]
-        self.params=[]
+        NNNet.__init__(self, layers=layers, cost_function=cost_function, input=input, output=output, input_type=input_type, output_type="vector")
         for i in range(len(layers)):
             self.layers[i].id = id + str(i)
 
@@ -58,9 +30,8 @@ class MLP(NNNet):
             self.connections.append(c)
             self.params=self.params+c.params
 
-        self.cost_function= cost_function
 
-
+        self.connect(self.x)
 
 
 

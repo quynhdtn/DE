@@ -1,3 +1,4 @@
+__author__ = 'quynhdo'
 """
  This tutorial introduces stacked denoising auto-encoders (SdA) using Theano.
 

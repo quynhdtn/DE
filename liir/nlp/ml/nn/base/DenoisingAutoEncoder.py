@@ -15,7 +15,7 @@ import theano.tensor as T
 import numpy as np
 
 class DenoisingAutoEncoder(NNNet):
-    def __init__(self,nIn=700, nHidden=500, corruption_level=0.1,id=""):
+    def __init__(self,nIn=700, nHidden=500, corruption_level=0.1,id="", initial_w=None, initial_b=None,input=None, input_type="matrix", output=None, output_type="matrix",cost_function=CrossEntroyCostFunction):
 
         self.corruption_level = corruption_level
 
@@ -29,7 +29,15 @@ class DenoisingAutoEncoder(NNNet):
 
 
         # declare nnnet
-        NNNet.__init__(self,ilayer, hlayer, olayer, cost_function=CrossEntroyCostFunction)
+        iw = None
+        ib=None
+
+        if initial_w != None:
+            iw = [initial_w,initial_w.T]
+        if initial_b != None:
+            ib = [initial_b, None]
+
+        NNNet.__init__(self,[ilayer, hlayer, olayer],initial_w=iw, initial_b=ib, cost_function=cost_function, auto_create_connection=True,  input=input, output=output, input_type=input_type, output_type=output_type)
 
         # change parameter constraint
         conn1 = self.connections[0]
@@ -37,14 +45,17 @@ class DenoisingAutoEncoder(NNNet):
 
         self.params.remove(conn2.W)
         conn2.W = conn1.W.T
+        self.y=self.x
+        self.connect(self.x)
 
 
-    def get_cost_updates(self, x, y, learning_rate):
+    def get_cost_updates(self,learning_rate ):
 
 
-        self.connect(x)
-        cost = self.cost_function(self.layers[len(self.layers)-1].output , y)
+        self.connect(self.x)
+        cost = self.cost_function(self.layers[len(self.layers)-1].output , self.y)
 
+        '''
         if self.knowledge != None:
             h = self.layers[len(self.layers)-2].output
             for p in self.knowledge['pair']:
@@ -53,7 +64,7 @@ class DenoisingAutoEncoder(NNNet):
 
 
                 cost= cost - T.mean ((x1-x2)**2)
-
+        '''
         gparams = T.grad(cost, self.params)
 
         updates = [
@@ -69,7 +80,7 @@ class DenoisingAutoEncoder(NNNet):
 
     def fit(self, train_data, batch_size, training_epochs, learning_rate, knowledge=None):
         self.knowledge=knowledge
-        NNNet.fit(self,train_data, train_data, batch_size, training_epochs, learning_rate)
+        NNNet.fit(self, train_data, train_data, batch_size, training_epochs, learning_rate)
         image = Image.fromarray(
             tile_raster_images(X=self.connections[0].W.get_value(borrow=True).T,
                                img_shape=(np.sqrt(self.nIn), np.sqrt(self.nIn)), tile_shape=(10, 10),

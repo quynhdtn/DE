@@ -1,3 +1,4 @@
+from liir.nlp.ml.nn.base.Connection import Connection
 from liir.nlp.ml.nn.base.Functions import SquaredErrorCostFunction, SigmoidOutputFunction, \
     NegativeLogLikelihoodCostFunction
 
@@ -12,24 +13,114 @@ except ImportError:
 from liir.nlp.ml.classifiers.linear.utils import tile_raster_images
 from liir.nlp.ml.nn.base.MLP import MLP
 from liir.nlp.ml.nn.base.Layer import Layer
-
+import theano.tensor as T
+import timeit
+import numpy as np
 
 class StackDenoisingAutoEncoder:
 
 
-    def __init__(self, numInput, numHiddens, numOutput, corruption_level,id=""):
+    def __init__(self, numInput, numHiddens, numOutput, corruption_level,  input=None, input_type="matrix", output=None, output_type="matrix",id=""):
 
-        self.layers=[]
+        layers=[]
         ilayer = Layer(numNodes=numInput, ltype = Layer.Layer_Type_Input, id=id+"0")  # input layer
-        self.layers.append(ilayer)
+        layers.append(ilayer)
+
         for i in  range(len(numHiddens)):
             hlayer = Layer(numNodes=numHiddens[i], ltype = Layer.Layer_Type_Hidden, id=id+str(i))
-            self.layers.append(hlayer)
-        self.mlp = MLP(self.layers, numOutput, activate_function=SigmoidOutputFunction, cost_function=NegativeLogLikelihoodCostFunction)
+            layers.append(hlayer)
 
-        for i in range(1, len(self.layers)):
-            dA= DenoisingAutoEncoder(self.layers[i-1].size, self.layers[i].size)
+        # construct the first DA:
 
+
+        if input is None:
+            if input_type == "matrix":
+                self.x = T.matrix(name='input')
+
+            if input_type == "vector":
+                self.x = T.vector(name='input')
+        else:
+            self.x = input
+
+
+        if output is None:
+            if output_type == "matrix":
+                self.y = T.matrix(name='output')
+
+            if output_type == "vector":
+                self.y = T.vector(name='output')
+        else:
+            self.y = output
+
+        self.mlp = MLP(layers, numOutput, activate_function=SigmoidOutputFunction, cost_function=NegativeLogLikelihoodCostFunction, input=self.x)
+
+
+        dA= DenoisingAutoEncoder(layers[0].size, layers[1].size, initial_w=self.mlp.connections[0].W, initial_b=self.mlp.connections[0].b,  input=self.x, id="da0", corruption_level=corruption_level[0])
+ #       dA.W = self.mlp.connections[0].W
+ #       dA.b= self.mlp.connections[0].b
+ #       dA.connect(dA.x)
+        self.dAs = [dA]
+
+        for i in range(2, len(layers)-1):
+            dA= DenoisingAutoEncoder(layers[i-1].size, layers[i].size,initial_w=self.mlp.connections[i-1].W, initial_b=self.mlp.connections[i-1].b, input=self.mlp.layers[i-1].output, id="da"+str(i-1), corruption_level=corruption_level[i-1])
+         #   dA.W = self.mlp.connections[i-1].W
+         #   dA.b= self.mlp.connections[i-1].b
+            self.dAs.append(dA)
+
+        print(len(self.dAs))
+
+    def preTraining(self, train_data, batch_size, training_epochs, learning_rate):
+        for dA in self.dAs:
+            dA.connect(dA.x)
+
+        index = T.lscalar()
+      #  x = T.matrix('x')
+     #   if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_SoftMax):
+     #       y = T.ivector('y')
+
+      #  if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Binary):
+      #      y = T.iscalar('y')
+      #  if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Real):
+       # y = T.matrix('y')
+
+
+        pretrainfns= []
+        i=0
+        for dA in self.dAs:
+            print(i)
+            cost,updates=dA.get_cost_updates(learning_rate)
+            train_da = th.function(
+            [index],
+            cost,
+            updates=updates,
+            givens={
+                self.x: train_data[index * batch_size: (index + 1) * batch_size],
+                }
+            )
+            pretrainfns.append(train_da)
+            i+=1
+
+        for train_da in pretrainfns:
+            n_train_batches = (int) (train_data.get_value(borrow=True).shape[0] / batch_size)
+
+         #   n_train_batches =2
+            start_time = timeit.default_timer()
+            for epoch in range(training_epochs):
+            # go through trainng set
+                c = []
+                for batch_index in range(int(n_train_batches)):
+                    c.append(train_da(batch_index))
+
+                print ('Training epoch %d, cost ' % epoch, np.mean(c))
+
+            end_time = timeit.default_timer()
+
+            training_time = (end_time - start_time)
+            print('Training time: %.2fm' % ((training_time) / 60.))
+
+
+
+    '''
 
     def __init__(self, *dA, size_output_layer=100,  activate_function=None, cost_function=SquaredErrorCostFunction):
         self.dAs= dA
@@ -66,17 +157,17 @@ class StackDenoisingAutoEncoder:
     def fit( self, train_data, train_data_label, batch_size, training_epochs, learning_rate):
         self.mlp.fit(train_data, train_data_label, batch_size, training_epochs, learning_rate)
 
-
+    '''
 dataset='/Users/quynhdo/Downloads/mnist.pkl'
 datasets = load_data(dataset)
 train_set_x, train_set_y = datasets[0]
 
 
-ae1 = DenoisingAutoEncoder(28*28,400,0.1,id="0")
 
-ae2 = DenoisingAutoEncoder(400,32*32,0.2,id="1")
+sda= StackDenoisingAutoEncoder(28*28,numHiddens=[1000, 1000, 1000],numOutput=10,corruption_level=[0.1,0.2,0.3])
+sda.preTraining(train_set_x, 20, 1,0.01)
 
-ae3= DenoisingAutoEncoder(32*32,700,0.3,id="2")
+sda.mlp.fit(train_set_x, train_set_y, 20,1,0.1)
 
-sda= StackDenoisingAutoEncoder(ae1,ae2,ae3)
-sda.preTrain(train_set_x, 20, 1,0.1)
+
+# we need a function to convert Y set from vector to matrix

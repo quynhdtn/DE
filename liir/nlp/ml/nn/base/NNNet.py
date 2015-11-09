@@ -9,29 +9,57 @@ from liir.nlp.ml.nn.base.Functions import SigmoidOutputFunction
 from liir.nlp.ml.nn.base.Connection import  Connection
 class NNNet:
 
-    def __init__(self, *layers, cost_function, **connection_config):
-        self.layers=[]
+    '''
+    layers: list of layer for the net
+
+    '''
+
+    def __init__(self, layers, cost_function,initial_w=None, initial_b=None, input=None, input_type="matrix", output=None, output_type="matrix", auto_create_connection=False):
         self.connections=[]
         self.layers=layers
         self.params=[]
-        if len(connection_config)!=0:
-            for l1,l2 in connection_config.keys():
-                af,of=connection_config[(l1,l2)]
-                c = self.createConnection(layers[l1],layers[l2], af, of)
-                self.connections.append(c)
-                self.params=self.params+c.params
-        else:
-            for i in range(len(layers)-1):
-                c = self.createConnection(layers[i],layers[i+1])
-                self.connections.append(c)
-                self.params=self.params+c.params
-
         self.cost_function= cost_function
 
+        '''
+        input can be a matrix (use for mini batch training) or vector (use for single training)
+        '''
+
+        if input is None:
+            if input_type == "matrix":
+                self.x = T.matrix(name='input')
+
+            if input_type == "vector":
+                self.x = T.vector(name='input')
+        else:
+            self.x = input
+
+        if output is None:
+            if output_type == "matrix":
+                self.y = T.matrix(name='output')
+
+            if output_type == "vector":
+                self.y = T.ivector(name='output')
+        else:
+            self.y = output
+
+        if auto_create_connection:
+            for i in range(len(layers)-1):
+                if initial_w is None:
+                    c = self.createConnection(layers[i],layers[i+1])
+                    self.connections.append(c)
+                    self.params=self.params+c.params
+
+                else:
+                    c = self.createConnection(layers[i],layers[i+1], initial_w=initial_w[i], initial_b=initial_b[i])
+                    self.connections.append(c)
+                    self.params=self.params+c.params
 
 
-    def createConnection (self, l1, l2,initial_w=None, af= DotActivateFunction, of = SigmoidOutputFunction, otype=Connection.Output_Type_Real):
-        return Connection(scr=l1, dst=l2, activate_func=af, output_func=of, use_bias=l1.useBias , id="c"+l1.id, otype=otype, initial_w=initial_w)
+
+
+
+    def createConnection (self, l1, l2,initial_w=None, initial_b=None, af= DotActivateFunction, of = SigmoidOutputFunction, otype=Connection.Output_Type_Real):
+        return Connection(scr=l1, dst=l2, activate_func=af, output_func=of, use_bias=l1.useBias , id="c"+l1.id, otype=otype, initial_w=initial_w, initial_b=initial_b)
 
 
     def get_connection(self, l1, l2):
@@ -39,6 +67,10 @@ class NNNet:
             if conn.scr == l1 and conn.dst == l2:
                 return conn
         return None
+
+    '''
+    connect all layers of the Net with the input X
+    '''
 
     def connect(self, x):
         assert len(self.layers) >=2
@@ -49,9 +81,9 @@ class NNNet:
 
 
 
-    def get_cost_updates(self, x, y, learning_rate):
-        self.connect(x)
-        cost = self.cost_function(self.layers[len(self.layers)-1].output , y)
+    def get_cost_updates(self,learning_rate):
+
+        cost = self.cost_function(self.layers[len(self.layers)-1].output , self.y)
 
         gparams = T.grad(cost, self.params)
 
@@ -63,24 +95,25 @@ class NNNet:
         return (cost, updates)
 
     def fit(self, train_data, train_data_label, batch_size, training_epochs, learning_rate):
+        self.connect(self.x)
         index = T.lscalar()
-        x = T.matrix('x')
+      #  x = T.matrix('x')
      #   if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_SoftMax):
      #       y = T.ivector('y')
 
       #  if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Binary):
       #      y = T.iscalar('y')
       #  if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_Real):
-        y = T.matrix('y')
+       # y = T.matrix('y')
 
-        cost,updates=self.get_cost_updates(x,y, learning_rate)
+        cost,updates=self.get_cost_updates(learning_rate)
         train_da = th.function(
         [index],
         cost,
         updates=updates,
         givens={
-            x: train_data[index * batch_size: (index + 1) * batch_size],
-            y: train_data_label[index * batch_size: (index + 1) * batch_size]
+            self.x: train_data[index * batch_size: (index + 1) * batch_size],
+            self.y: train_data_label[index * batch_size: (index + 1) * batch_size]
             }
         )
         n_train_batches = (int) (train_data.get_value(borrow=True).shape[0] / batch_size)

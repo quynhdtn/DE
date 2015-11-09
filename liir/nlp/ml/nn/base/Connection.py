@@ -16,44 +16,49 @@ class Connection:
 
 
 
-    def __init__(self, scr, dst, activate_func, output_func, use_bias=True, id="", initial_w = None, otype="real" ):
+    def __init__(self, scr, dst, activate_func, output_func, use_bias=True, id="", initial_w = None, initial_b=None,otype="real" ):
         self.scr = scr  # source layer
         self.dst = dst  # destination layer
         self.activate_func = activate_func # transfer function
         self.output_func = output_func  # activate function
         self.otype=otype
    #     self.W=th.shared(value=np.zeros((scr.size, dst.size), dtype=th.config.floatX), name="W" + id, borrow=True)
-        self.rng = np.random.RandomState(123)
+        self.rng = np.random.RandomState(89677)
         self.theano_rng = RandomStreams(self.rng.randint(2 ** 30))
-        self.W=None
-        if output_func is SigmoidOutputFunction or output_func is SoftmaxOutputFunction:
-            self.W = th.shared(value=np.asarray(
-                    self.rng.uniform(
-                        low=-4 * np.sqrt(6. / (scr.size + dst.size)),
-                        high=4 * np.sqrt(6. / (scr.size + dst.size)),
-                        size=(scr.size, dst.size)
-                    ),
-                    dtype=th.config.floatX
-                ),name='W'+id, borrow=True)
-
-        if output_func is TanhOutputFunction :
-            self.W= th.shared(value = np.asarray(
-                    self.rng.uniform(
-                        low=- np.sqrt(6. / (scr.size + dst.size)),
-                        high= np.sqrt(6. / (scr.size + dst.size)),
-                        size=(scr.size, dst.size)
-                    ),
-                    dtype=th.config.floatX
-                ),name='W'+id, borrow=True)
-
-        if self.W is None:
-            self.W=th.shared(value=np.zeros((scr.size, dst.size), dtype=th.config.floatX), name="W" + id, borrow=True)
         if initial_w != None:
             self.W = initial_w
+        else:
+            self.W=None
+            if output_func is SigmoidOutputFunction or output_func is SoftmaxOutputFunction:
+                self.W = th.shared(value=np.asarray(
+                        self.rng.uniform(
+                            low=-4 * np.sqrt(6. / (scr.size + dst.size)),
+                            high=4 * np.sqrt(6. / (scr.size + dst.size)),
+                            size=(scr.size, dst.size)
+                        ),
+                        dtype=th.config.floatX
+                    ),name='W'+id, borrow=True)
+
+            if output_func is TanhOutputFunction :
+                self.W= th.shared(value = np.asarray(
+                        self.rng.uniform(
+                            low=- np.sqrt(6. / (scr.size + dst.size)),
+                            high= np.sqrt(6. / (scr.size + dst.size)),
+                            size=(scr.size, dst.size)
+                        ),
+                        dtype=th.config.floatX
+                    ),name='W'+id, borrow=True)
+
+    #    if self.W is None:
+    #        self.W=th.shared(value=np.zeros((scr.size, dst.size), dtype=th.config.floatX), name="W" + id, borrow=True)
+
 
         self.params=[self.W]
         if use_bias:
-            self.b = th.shared(value=np.zeros(dst.size), name="b" + id, borrow=True)
+            if initial_b != None:
+                self.b=initial_b
+            else:
+                self.b = th.shared(value=np.zeros(dst.size), name="b" + id, borrow=True)
             self.params.append(self.b)
         else:
             self.b = None

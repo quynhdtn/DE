@@ -20,7 +20,7 @@ class AutoEncoder(NNNet):
         olayer = Layer(numNodes=nIn, ltype = Layer.Layer_Type_Output, id="2")
 
         # declare nnnet
-        NNNet.__init__(self, ilayer, hlayer, olayer, cost_function=CrossEntroyCostFunction)
+        NNNet.__init__(self, [ilayer, hlayer, olayer], cost_function=CrossEntroyCostFunction, auto_create_connection=True)
 
         # change parameter constraint
         conn1 = self.connections[0]

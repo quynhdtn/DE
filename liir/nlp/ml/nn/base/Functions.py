@@ -12,6 +12,13 @@ def DotActivateFunction( x, W, b):
         else:
             return T.dot(x,W)
 
+def DotActivateFunctionExtended( x, x_e, W, b):
+
+        if b !=None:
+            return T.dot(T.concatenate([x,x_e], axis=1), W) + b
+        else:
+            return T.dot(x,W)
+
 def NoneActivateFunction(self, x, W, b):
         return x
 

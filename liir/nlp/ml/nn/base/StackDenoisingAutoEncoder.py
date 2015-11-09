@@ -162,12 +162,30 @@ dataset='/Users/quynhdo/Downloads/mnist.pkl'
 datasets = load_data(dataset)
 train_set_x, train_set_y = datasets[0]
 
+test_set_x, test_set_y = datasets[1]
+
 
 
 sda= StackDenoisingAutoEncoder(28*28,numHiddens=[1000, 1000, 1000],numOutput=10,corruption_level=[0.1,0.2,0.3])
-sda.preTraining(train_set_x, 20, 1,0.01)
+sda.preTraining(train_set_x, 20, 2,0.01)
 
 sda.mlp.fit(train_set_x, train_set_y, 20,1,0.1)
 
+y_pred = sda.mlp.predict(test_set_x)
+print(y_pred)
+print (test_set_y)
+from sklearn import metrics
+print (metrics.f1_score(test_set_y.eval(),y_pred))
+
+from liir.nlp.ml.nn.base.Factory import Factory
+mp=Factory.buildMLPStandard(28*28, 10)
+mp.fit(train_set_x, train_set_y,20,1,0.1)
+
+
+y_pred = mp.predict(test_set_x)
+print(y_pred)
+print (test_set_y)
+from sklearn import metrics
+print (metrics.f1_score(test_set_y.eval(),y_pred))
 
 # we need a function to convert Y set from vector to matrix

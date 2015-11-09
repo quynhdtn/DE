@@ -28,6 +28,7 @@ class AutoEncoder(NNNet):
 
         self.params.remove(conn2.W)
         conn2.W = conn1.W.T
+        self.connect(self.x)
 
     def fit(self, train_data, batch_size, training_epochs, learning_rate):
         NNNet.fit(self, train_data, train_data, batch_size, training_epochs, learning_rate)

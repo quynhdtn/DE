@@ -17,13 +17,18 @@ class Layer:
     Layer_Type_Output="output"
 
 
-    def __init__(self, numNodes, ltype, useBias=True, id="", input_process_func=NoneProcessFunction):
+    def __init__(self, numNodes, ltype, useBias=True, id="", input_process_func=NoneProcessFunction, extendNodes=None):
         self.ltype = ltype
         self.output = np.zeros(numNodes)
         self.useBias = useBias
         self.size = numNodes
         self.id = id
         self.input_process_func = input_process_func
+        self.isExtended=False
+        if extendNodes !=None:
+            self.extend = np.zeros(extendNodes)
+            self.size_extend = extendNodes
+            self.isExtended=True
 
         if ltype == Layer.Layer_Type_Output:
             self.label = None
@@ -32,6 +37,8 @@ class Layer:
     def process_input(self, x, *kargs):
         self.output = self.input_process_func(x, kargs)
 
+    def process_extend(self, x_extend, *kargs):
+        self.output = x_extend
 
 class DenoisingLayer(Layer):
     def __init__(self, numNodes, ltype, useBias=True, id="",  corruption_level=0.1):

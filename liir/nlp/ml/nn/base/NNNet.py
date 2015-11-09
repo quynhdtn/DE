@@ -10,11 +10,25 @@ from liir.nlp.ml.nn.base.Connection import  Connection
 class NNNet:
 
     '''
-    layers: list of layer for the net
+        This is a template to make a neural neutron network
 
     '''
 
-    def __init__(self, layers, cost_function,initial_w=None, initial_b=None, input=None, input_type="matrix", output=None, output_type="matrix", auto_create_connection=False):
+
+    def __init__(self, layers, cost_function, initial_w=None, initial_b=None, input=None, input_type="matrix", output=None, output_type="matrix", auto_create_connection=False):
+        '''
+
+        :param layers: List of layers
+        :param cost_function:
+        :param initial_w: List of initial weights for connections
+        :param initial_b: List of initial bias for connections
+        :param input:
+        :param input_type: type of input, can be matrix or vector
+        :param output:
+        :param output_type: type of input, can be matrix or vector
+        :param auto_create_connection: True or False, if True, the NNNet init connections between layers automatically
+        :return:
+        '''
         self.connections=[]
         self.layers=layers
         self.params=[]
@@ -95,7 +109,7 @@ class NNNet:
         return (cost, updates)
 
     def fit(self, train_data, train_data_label, batch_size, training_epochs, learning_rate):
-        self.connect(self.x)
+
         index = T.lscalar()
       #  x = T.matrix('x')
      #   if (self.connections[len(self.connections)-1].otype == Connection.Output_Type_SoftMax):
@@ -132,6 +146,8 @@ class NNNet:
 
         training_time = (end_time - start_time)
         print('Training time: %.2fm' % ((training_time) / 60.))
+
+
 
 
 
